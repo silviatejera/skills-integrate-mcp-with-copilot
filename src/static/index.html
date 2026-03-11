@@ -13,8 +13,20 @@
     </header>
 
     <main>
+
       <section id="activities-container">
         <h3>Available Activities</h3>
+        <div class="form-group">
+          <label for="location-filter">Filter by Location:</label>
+          <select id="location-filter">
+            <option value="">All Locations</option>
+            <option value="Main Campus">Main Campus</option>
+            <option value="STEM Center">STEM Center</option>
+            <option value="Sports Complex">Sports Complex</option>
+            <option value="Arts Building">Arts Building</option>
+            <option value="Auditorium">Auditorium</option>
+          </select>
+        </div>
         <div id="activities-list">
           <!-- Activities will be loaded here -->
           <p>Loading activities...</p>

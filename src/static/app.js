@@ -3,18 +3,30 @@ document.addEventListener("DOMContentLoaded", () => {
   const activitySelect = document.getElementById("activity");
   const signupForm = document.getElementById("signup-form");
   const messageDiv = document.getElementById("message");
+  const locationFilter = document.getElementById("location-filter");
 
-  // Function to fetch activities from API
-  async function fetchActivities() {
+  // Function to fetch activities from API, optionally by location
+  async function fetchActivities(location = "") {
     try {
-      const response = await fetch("/activities");
+      let url = "/activities";
+      if (location) {
+        url += `?location=${encodeURIComponent(location)}`;
+      }
+      const response = await fetch(url);
       const activities = await response.json();
 
-      // Clear loading message
+      // Always clear previous content
       activitiesList.innerHTML = "";
+      activitySelect.innerHTML = '<option value="">-- Select an activity --</option>';
+
+      const activityEntries = Object.entries(activities);
+      if (activityEntries.length === 0) {
+        activitiesList.innerHTML = '<p><em>No activities found for this location.</em></p>';
+        return;
+      }
 
       // Populate activities list
-      Object.entries(activities).forEach(([name, details]) => {
+      activityEntries.forEach(([name, details]) => {
         const activityCard = document.createElement("div");
         activityCard.className = "activity-card";
 
@@ -41,6 +53,7 @@ document.addEventListener("DOMContentLoaded", () => {
           <h4>${name}</h4>
           <p>${details.description}</p>
           <p><strong>Schedule:</strong> ${details.schedule}</p>
+          <p><strong>Location:</strong> ${details.location}</p>
           <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
           <div class="participants-container">
             ${participantsHTML}
@@ -75,30 +88,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try {
       const response = await fetch(
-        `/activities/${encodeURIComponent(
-          activity
-        )}/unregister?email=${encodeURIComponent(email)}`,
+        `/activities/${encodeURIComponent(activity)}/unregister?email=${encodeURIComponent(email)}`,
         {
           method: "DELETE",
         }
       );
-
       const result = await response.json();
 
       if (response.ok) {
         messageDiv.textContent = result.message;
         messageDiv.className = "success";
-
         // Refresh activities list to show updated participants
-        fetchActivities();
+        fetchActivities(locationFilter ? locationFilter.value : "");
       } else {
         messageDiv.textContent = result.detail || "An error occurred";
         messageDiv.className = "error";
       }
 
       messageDiv.classList.remove("hidden");
-
-      // Hide message after 5 seconds
       setTimeout(() => {
         messageDiv.classList.add("hidden");
       }, 5000);
@@ -110,50 +117,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Handle form submission
-  signupForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
-
-    const email = document.getElementById("email").value;
-    const activity = document.getElementById("activity").value;
-
-    try {
-      const response = await fetch(
-        `/activities/${encodeURIComponent(
-          activity
-        )}/signup?email=${encodeURIComponent(email)}`,
-        {
-          method: "POST",
-        }
-      );
-
-      const result = await response.json();
-
-      if (response.ok) {
-        messageDiv.textContent = result.message;
-        messageDiv.className = "success";
-        signupForm.reset();
-
-        // Refresh activities list to show updated participants
-        fetchActivities();
-      } else {
-        messageDiv.textContent = result.detail || "An error occurred";
-        messageDiv.className = "error";
-      }
-
-      messageDiv.classList.remove("hidden");
-
-      // Hide message after 5 seconds
-      setTimeout(() => {
-        messageDiv.classList.add("hidden");
-      }, 5000);
-    } catch (error) {
-      messageDiv.textContent = "Failed to sign up. Please try again.";
-      messageDiv.className = "error";
-      messageDiv.classList.remove("hidden");
-      console.error("Error signing up:", error);
-    }
-  });
+  // Handle location filter change
+  if (locationFilter) {
+    locationFilter.addEventListener("change", (e) => {
+      fetchActivities(locationFilter.value);
+    });
+  }
 
   // Initialize app
   fetchActivities();
